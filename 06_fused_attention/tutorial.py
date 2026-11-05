@@ -157,12 +157,15 @@ def _attn_fwd_kernel(
     off_z = off_hz // H
     off_h = off_hz % H
 
-    qvk_offset = off_z.to(tl.int64) * stride_qz + off_h.to(tl.int64) * stride_qh
+    q_offset = off_z.to(tl.int64) * stride_qz + off_h.to(tl.int64) * stride_qh
+    k_offset = off_z.to(tl.int64) * stride_kz + off_h.to(tl.int64) * stride_kh
+    v_offset = off_z.to(tl.int64) * stride_vz + off_h.to(tl.int64) * stride_vh
+    o_offset = off_z.to(tl.int64) * stride_oz + off_h.to(tl.int64) * stride_oh
 
     # Load Q tile once; stream K/V tiles along the sequence
     offs_m = start_m * BLOCK_M + tl.arange(0, BLOCK_M)
     offs_d = tl.arange(0, BLOCK_DMODEL)
-    q_ptrs = Q + qvk_offset + offs_m[:, None] * stride_qm + offs_d[None, :] * stride_qk
+    q_ptrs = Q + q_offset + offs_m[:, None] * stride_qm + offs_d[None, :] * stride_qk
     q_mask = offs_m[:, None] < N_CTX
     q = tl.load(q_ptrs, mask=q_mask, other=0.0)
 
@@ -175,7 +178,7 @@ def _attn_fwd_kernel(
         start_n = tl.multiple_of(start_n, BLOCK_N)
         offs_n = start_n + tl.arange(0, BLOCK_N)
 
-        k_ptrs = K + qvk_offset + offs_n[:, None] * stride_kn + offs_d[None, :] * stride_kk
+        k_ptrs = K + k_offset + offs_n[:, None] * stride_kn + offs_d[None, :] * stride_kk
         k_mask = offs_n[:, None] < N_CTX
         k = tl.load(k_ptrs, mask=k_mask, other=0.0)
 
@@ -190,12 +193,12 @@ def _attn_fwd_kernel(
         l_i = l_i * alpha + tl.sum(p, axis=1)
         m_i = m_new
 
-        v_ptrs = V + qvk_offset + offs_n[:, None] * stride_vn + offs_d[None, :] * stride_vk
+        v_ptrs = V + v_offset + offs_n[:, None] * stride_vn + offs_d[None, :] * stride_vk
         v = tl.load(v_ptrs, mask=k_mask, other=0.0)
         acc = acc * alpha[:, None] + tl.dot(p.to(v.dtype), v)
 
     acc = acc / l_i[:, None]
-    o_ptrs = Out + qvk_offset + offs_m[:, None] * stride_om + offs_d[None, :] * stride_ok
+    o_ptrs = Out + o_offset + offs_m[:, None] * stride_om + offs_d[None, :] * stride_ok
     tl.store(o_ptrs, acc.to(Out.dtype.element_ty), mask=q_mask)
 
 

@@ -258,7 +258,9 @@ def benchmark(M, N, provider):
         ms = triton.testing.do_bench(lambda: softmax(x))
     if provider == "naive_softmax":
         ms = triton.testing.do_bench(lambda: naive_softmax(x))
-    gbps = lambda ms: 2 * x.numel() * x.element_size() * 1e-9 / (ms * 1e-3)
+    # Naive softmax moves 8MNb (5 reads + 3 writes); the fused paths move 2MNb.
+    traffic = 8 if provider == "naive_softmax" else 2
+    gbps = lambda ms: traffic * x.numel() * x.element_size() * 1e-9 / (ms * 1e-3)
     return gbps(ms)
 
 
@@ -266,7 +268,10 @@ def benchmark(M, N, provider):
 if __name__ == "__main__":
     print("Running Tests...")
     test_pseudo_matches_torch()
-    test_correctness()
+    try:
+        test_correctness()
+    except pytest.skip.Exception as e:
+        print(f"skipped: {e}")
 
     print("Running Benchmark...")
     if torch.cuda.is_available() or DEVICE.type == "cuda":

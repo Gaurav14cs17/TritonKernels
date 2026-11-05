@@ -43,7 +43,6 @@ flowchart TB
 - Start with small \(N\) (e.g. 1024) and \(p\in\{0.1,0.5\}\) before large tensors; verify keep-rate \(\approx 1-p\).
 - Inverted scale \(1/(1-p)\) is easy to forget — without it, \(\mathbb{E}[Y]=(1-p)X\).
 - Philox is **counter-based**: output depends only on \((\mathrm{seed},\mathrm{offset})\), so lanes need no shared RNG state.
-- Re-run `python scripts/download_tutorial_images.py` from the repo root if the benchmark figure is missing offline.
 
 ## See also
 

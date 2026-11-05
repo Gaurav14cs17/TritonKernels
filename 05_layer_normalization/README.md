@@ -57,7 +57,7 @@ $$
 |-------|----------------------|------------------|
 | Naive multi-pass | $\ge 3$ | intermediates in HBM |
 | Fused Python | 1–2 | NumPy/Torch temps |
-| Triton | 1 load + 1 store of $y$ | SRAM / registers |
+| Triton | $4N$ per row ($x,\gamma,\beta,y$); $2N$ only when $\gamma,\beta$ are L2-resident | SRAM / registers |
 
 ---
 
@@ -106,7 +106,7 @@ $$
 | Path | Role |
 |------|------|
 | [`docs/README.md`](docs/README.md) | Gradients sketch, RMSNorm variant, exercises |
-| [`docs/visual-guide.md`](docs/visual-guide.md) | Mermaid mental model + benchmark walkthrough |
+| [`docs/README.md`](docs/README.md) | Deeper formulas, pitfalls, and exercises |
 | [`docs/images/`](docs/images/) | Whiteboard theory figures |
 | [`05_layer_normalization.ipynb`](05_layer_normalization.ipynb) | Interactive ladder (naive → fused → Triton) |
 | [`tutorial.py`](tutorial.py) | Forward fused kernel + tests |

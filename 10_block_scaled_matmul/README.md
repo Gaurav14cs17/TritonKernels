@@ -92,7 +92,7 @@ with dequant fused into the $K$-loop (official path) instead of writing full FP1
 ## Concrete teaching walk
 
 1. Prove $C=(s_A A)(s_B B)=(s_A s_B)AB$ for scalars; check with torch.
-2. Run the three notebook paths (`naive_*`, `*_ref`, `*_triton`); `allclose` vs reference.
+2. Run the four notebook paths (`naive_*`, `*_ref`, `*_triton`, `*_fused`); `allclose` vs reference.
 3. Replace scalars with a $2\times 2$ grid of block scales in PyTorch; measure Frobenius error vs full-precision $AB$.
 4. Read the official FP8 / MX layout kernel — scales indexed beside $K$-panels.
 

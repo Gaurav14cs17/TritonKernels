@@ -209,7 +209,10 @@ def benchmark(size, provider):
 if __name__ == "__main__":
     print("Running Tests...")
     test_pseudo_matches_torch()
-    test_correctness()
+    try:
+        test_correctness()
+    except pytest.skip.Exception as e:
+        print(f"skipped: {e}")
 
     print("Running Benchmark...")
     if torch.cuda.is_available() or DEVICE.type == "cuda":

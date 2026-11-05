@@ -73,7 +73,7 @@ Host builds device arrays of pointers and sizes; the kernel indexes by group id 
 ## Common pitfalls
 
 - Confusing **L2 grouped pid (03)** with **multi-problem Group GEMM (08)**.
-- Assuming this folder’s sequential Triton loop is already the official one-launch kernel — it is the **baseline**; the pointer-table launch is the next step (official tutorial / deeper reading).
+- Assuming this folder’s sequential Triton loop is already the official one-launch kernel — it is the **baseline**. The notebook and `tutorial.py` also include a packed pointer-table launch (`group_gemm_one_launch`); it is a teaching sketch, not a tuned production kernel.
 - Padding all $M_g$ to $\max M_g$ without counting wasted FLOPs.
 
 ---
@@ -94,7 +94,7 @@ MoE experts often have different token counts $M_g$ → group GEMM or padded bat
 
 1. Build a list of $(A_g,B_g)$ with mismatched shapes; verify sequential torch.
 2. Swap each call for tutorial-03 `matmul` — still $G$ launches, same $C_g$.
-3. Sketch a pointer table: `A_ptrs[g]`, `B_ptrs[g]`, `M[g]`, `N[g]`, `K[g]`.
+3. Build the pointer table (`A_off[g]`, `B_off[g]`, `C_off[g]`, `M[g]`, `N[g]`, `K[g]`) and launch one grid over all tiles.
 4. Read the official one-launch kernel; contrast schedule with persistent workers (09).
 
 ---

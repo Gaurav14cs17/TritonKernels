@@ -10,7 +10,7 @@ Standard dropout:
     y = x / (1 - p)  if keep, else 0
 with keep ~ Bernoulli(1 - p).
 
-Storing a full boolean mask doubles memory traffic. Generating the random
+Storing a full `bool` mask adds one byte per element (about 75% extra traffic for fp32). Generating the random
 keep/drop decision on the fly (and never writing the mask) is the "low memory"
 trick — both in the Python fuse and in the Triton kernel via tl.rand.
 """
@@ -63,14 +63,14 @@ def naive_dropout_pseudo(x, p, seed: int = 0):
         - read  x + mask
         - write y
 
-    The mask itself is often as large as x. That is the cost we want to avoid.
+    The mask is O(N), but it still costs an extra allocation and a round trip. That is the cost we want to avoid.
     """
     assert 0.0 <= p < 1.0
     g = torch.Generator(device="cpu")
     g.manual_seed(seed)
     # Materialize the full Bernoulli mask in memory
     x_cpu = x.detach().cpu()
-    mask = torch.rand(x_cpu.shape, generator=g, dtype=x_cpu.dtype) > p
+    mask = torch.rand(x_cpu.shape, generator=g, dtype=x_cpu.dtype) >= p
     y = torch.where(mask, x_cpu / (1.0 - p), torch.zeros_like(x_cpu))
     return y.to(device=x.device, dtype=x.dtype)
 
@@ -101,7 +101,7 @@ def fused_dropout_pseudo(x, p, seed: int = 0):
     for i in range(n):
         # Uniform[0, 1) keep decision — never written to a mask buffer
         r = torch.rand((), generator=g).item()
-        if r > p:
+        if r >= p:
             y_flat[i] = x_flat[i] / (1.0 - p)
         else:
             y_flat[i] = 0.0
@@ -132,7 +132,7 @@ def dropout_kernel(
     x = tl.load(x_ptr + offsets, mask=mask)
     # On-the-fly RNG — no mask tensor in HBM
     random = tl.rand(seed, offsets)
-    x_keep = random > p
+    x_keep = random >= p
     output = tl.where(x_keep, x / (1 - p), 0.0)
     tl.store(output_ptr + offsets, output, mask=mask)
 
@@ -204,4 +204,7 @@ def test_correctness() -> None:
 if __name__ == "__main__":
     print("Running Tests...")
     test_pseudo_statistical()
-    test_correctness()
+    try:
+        test_correctness()
+    except pytest.skip.Exception as e:
+        print(f"skipped: {e}")

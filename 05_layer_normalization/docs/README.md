@@ -1,6 +1,6 @@
 # Docs — Layer Normalization (deep dive)
 
-Expands the folder README with RMSNorm, backward sketch, block-size rules, and exercises. Visuals live in [`images/`](images/) and [`visual-guide.md`](visual-guide.md).
+Expands the folder README with RMSNorm, backward sketch, block-size rules, and exercises. Visuals live in [`images/`](images/).
 
 ---
 
@@ -74,6 +74,6 @@ Centered form is often stabler in practice; either way, accumulate in FP32.
 
 ## See also
 
-- Visual guide: [`visual-guide.md`](visual-guide.md)
+- Back to the lesson: [`../README.md`](../README.md)
 - Notebook: [`../05_layer_normalization.ipynb`](../05_layer_normalization.ipynb)
 - Official: [05-layer-norm](https://triton-lang.org/main/getting-started/tutorials/05-layer-norm.html)

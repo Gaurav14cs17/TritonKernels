@@ -83,11 +83,12 @@ Each program reuses the same compiled block body across many rows — fewer laun
 After compiling, register count $R$ and shared memory $S$ per program bound how many programs fit per SM:
 
 $$
-\text{occupancy} \le \min\left(\left\lfloor\frac{\text{regs/SM}}{R\cdot\text{warps}}\right\rfloor,
+\text{occupancy} \le \min\left(\left\lfloor\frac{\text{regs/SM}}{R\cdot W\cdot\text{warps}}\right\rfloor,
 \left\lfloor\frac{\text{smem/SM}}{S}\right\rfloor\right).
 $$
 
-`num_programs ≈ #SM × occupancy`, capped by $M$.
+`num_programs ≈ #SM × occupancy`, capped by $M$. Here $W=32$ is the warp size:
+registers are allocated per thread, not per program.
 
 ---
 

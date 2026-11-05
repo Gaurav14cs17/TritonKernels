@@ -24,7 +24,7 @@ flowchart TB
 |--------|----------------|
 | ![Grid tree](images/grid-block-warp-thread.jpeg) | Compact Grid / Block / Warp / Thread tree |
 | ![CUDA hierarchy](images/cuda-execution-hierarchy.png) | Grid → blocks → warps (32) → lanes; SIMT |
-| ![Whiteboard: naive 1-element programs vs blocked + mask tiling](images/benchmark-vector-add.png) | Official throughput vs problem size |
+| ![Benchmark: throughput vs problem size](images/benchmark-vector-add-plot.png) | Official throughput vs problem size |
 
 ## Visual: theory board (method / logic)
 ## Theory board
@@ -53,7 +53,6 @@ Triton and PyTorch both sit near the memory-bandwidth ceiling for this op — fu
 - Start from the teaching remainder \(N=5\), \(B=4\) before jumping to \(2^{20}+\).
 - Powers-of-two \(B\) map cleanly to Triton shapes; change \(B\in\{256,1024,4096\}\) and re-bench.
 - If GB/s flatlines near peak DRAM, the kernel is doing its job — vector add is memory-bound.
-- Re-run `python scripts/download_tutorial_images.py` if figures are missing offline.
 
 ## See also
 

@@ -11,7 +11,16 @@ Each numbered folder is one lesson with the same layout:
 - **`docs/README.md`** — deeper formulas, pitfalls, exercises
 - **`docs/images/`** — whiteboard theory boards (method / logic)
 
-**Ladder everywhere:** Naive Python / pseudocode → intermediate step → Triton kernel.
+**Ladder everywhere:** **Method 01 — naive** → **Method 02 — kernel-based** → **Method 03 — fused kernel-based**.
+
+New to Triton? Start with the [`00_Basic`](00_Basic/00_index.ipynb) book. It is
+now organized as **8 parts → 24 chapter folders**, and every chapter has a
+`README.md` section map, a `<NN>_theory.ipynb` reference, and a
+`<NN>_applied.ipynb` with runnable examples. The mandatory 18-point operation
+card (purpose, signature, shapes/dtypes, numerical example, indexing, memory,
+PyTorch, naive Python, Triton, CUDA comparison, mapping, test, mistakes,
+performance, exercises) lives in the theory notebook; the applied notebook turns
+each section into a kernel with a PyTorch reference and a correctness test.
 
 ---
 
@@ -19,6 +28,7 @@ Each numbered folder is one lesson with the same layout:
 
 | Day / block | Folder | Focus until you can … |
 |-------------|--------|------------------------|
+| 0 | [00_Basic](00_Basic/) | Explain programs, pointers, masks, vectors, reductions, and `tl.dot` from first principles |
 | 1 | [01](01_vector_addition/) | Explain `pid`, `offsets`, **mask**, and why vector-add is memory-bound |
 | 1–2 | [02](02_fused_softmax/) | Count HBM traffic: multi-pass vs fused row softmax |
 | 2–3 | [03](03_matrix_multiplication/) | Draw blocked GEMM + $B_K$ + **grouped** pid (richest visuals) |
@@ -29,6 +39,7 @@ Each numbered folder is one lesson with the same layout:
 | 5–6 | [08](08_group_gemm/) | Contrast Group GEMM vs `bmm` vs tutorial-03 “grouped” L2 |
 | 6 | [09](09_persistent_matmul/) | Classic 1-tile grid vs persistent workers / work queue |
 | 6–7 | [10](10_block_scaled_matmul/) | Scalar identity $(s_A s_B)AB$ → idea of in-kernel block scales |
+| 7 | [11](11_embedding_forward_kernel/) | Read embedding as gather, backward as atomic scatter-add, and fuse $H=W[I]+\mathcal P$ |
 
 **Rule of thumb:** finish **01 → 03** before 06–10. Tutorial **03** is the GEMM backbone for 08–10.
 
@@ -56,6 +67,7 @@ Each numbered folder is one lesson with the same layout:
 
 | Folder | Topic | Official doc |
 |--------|--------|--------------|
+| [00_Basic](00_Basic/) | Expanded Triton fundamentals (24 complete chapter notebooks) | [Triton language](https://triton-lang.org/main/python-api/triton.language.html) |
 | [01_vector_addition](01_vector_addition/) | Vector addition | [01-vector-add](https://triton-lang.org/main/getting-started/tutorials/01-vector-add.html) |
 | [02_fused_softmax](02_fused_softmax/) | Fused softmax | [02-fused-softmax](https://triton-lang.org/main/getting-started/tutorials/02-fused-softmax.html) |
 | [03_matrix_multiplication](03_matrix_multiplication/) | Matrix multiply (GEMM) | [03-matrix-multiplication](https://triton-lang.org/main/getting-started/tutorials/03-matrix-multiplication.html) |
@@ -66,6 +78,7 @@ Each numbered folder is one lesson with the same layout:
 | [08_group_gemm](08_group_gemm/) | Group GEMM | [08-group-gemm](https://triton-lang.org/main/getting-started/tutorials/08-group-gemm.html) |
 | [09_persistent_matmul](09_persistent_matmul/) | Persistent matmul | [09-persistent-matmul](https://triton-lang.org/main/getting-started/tutorials/09-persistent-matmul.html) |
 | [10_block_scaled_matmul](10_block_scaled_matmul/) | Block-scaled matmul | [10-block-scaled-matmul](https://triton-lang.org/main/getting-started/tutorials/10-block-scaled-matmul.html) |
+| [11_embedding_forward_kernel](11_embedding_forward_kernel/) | Embedding forward/backward (gather + atomic scatter-add) | [Course notes](11_embedding_forward_kernel/doc/Embedding_kernal.pdf) |
 
 ### Shared primer
 

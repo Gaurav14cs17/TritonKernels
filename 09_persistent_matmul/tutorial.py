@@ -1,6 +1,6 @@
 # %% [markdown]
 # # 09 — Persistent Matmul
-# Standard blocked launch (tutorial 03) → persistent-grid pseudo → small persistent Triton kernel.
+# Persistent Python pseudo → classic blocked baseline (tutorial 03) → small persistent Triton kernel.
 #
 # Official: https://triton-lang.org/main/getting-started/tutorials/09-persistent-matmul.html
 
@@ -38,7 +38,17 @@ def require_gpu() -> None:
     if not torch.cuda.is_available() and getattr(DEVICE, "type", None) != "cuda":
         pytest.skip(f"GPU not available (active device: {DEVICE})")
 
-_matmul_path = Path(__file__).resolve().parents[1] / "03_matrix_multiplication" / "tutorial.py"
+_HERE = Path(__file__).resolve().parent
+_REPO = _HERE
+for _candidate in (_HERE, *_HERE.parents):
+    if (_candidate / '03_matrix_multiplication' / 'tutorial.py').exists():
+        _REPO = _candidate
+        break
+else:
+    raise FileNotFoundError(
+        'cannot locate 03_matrix_multiplication from ' + str(_HERE)
+    )
+_matmul_path = _REPO / '03_matrix_multiplication' / 'tutorial.py'
 _spec = importlib.util.spec_from_file_location("matmul_mod", _matmul_path)
 _matmul_mod = importlib.util.module_from_spec(_spec)
 assert _spec.loader is not None
@@ -168,7 +178,11 @@ def persistent_matmul(a, b, num_programs=None, BLOCK_M=64, BLOCK_N=64, BLOCK_K=3
     c = torch.empty((M, N), device=a.device, dtype=a.dtype)
     num_tiles = triton.cdiv(M, BLOCK_M) * triton.cdiv(N, BLOCK_N)
     if num_programs is None:
-        num_programs = min(num_tiles, 8)
+        try:
+            sms = torch.cuda.get_device_properties(a.device).multi_processor_count
+        except Exception:
+            sms = 8  # CPU / interpreter fallback
+        num_programs = min(num_tiles, sms)
     persistent_matmul_kernel[(num_programs,)](
         a,
         b,

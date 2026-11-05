@@ -120,6 +120,7 @@ def _layer_norm_fwd_kernel(
 
 def layer_norm(x, weight, bias, eps=1e-5):
     M, N = x.shape
+    x = x.contiguous()          # the kernel assumes a dense trailing dimension
     y = torch.empty_like(x)
     mean = torch.empty((M,), device=x.device, dtype=torch.float32)
     rstd = torch.empty((M,), device=x.device, dtype=torch.float32)
@@ -163,7 +164,25 @@ def test_correctness() -> None:
 
 
 # %%
+def test_mask_tail() -> None:
+    """GPU: N=255 is not a power of two, so the mask path is live."""
+    require_gpu()
+    torch.manual_seed(0)
+    x = torch.randn(8, 255, device=DEVICE)
+    weight = torch.randn(255, device=DEVICE)
+    bias = torch.randn(255, device=DEVICE)
+    ref = torch.nn.functional.layer_norm(x, (255,), weight, bias, 1e-5)
+    out = layer_norm(x, weight, bias)
+    assert torch.allclose(out, ref, atol=1e-4, rtol=1e-4)
+    print("layer-norm N=255 mask tail OK")
+
+
+# %%
 if __name__ == "__main__":
     print("Running Tests...")
     test_pseudo_matches_torch()
-    test_correctness()
+    for fn in (test_correctness, test_mask_tail):
+        try:
+            fn()
+        except pytest.skip.Exception as e:
+            print(f"skipped {fn.__name__}: {e}")

@@ -51,7 +51,6 @@ Fused Triton cuts DRAM traffic toward \(2MNb\) bytes; naive multi-pass pays seve
 - Start from a tiny width (\(N=5\to B=8\)) to see \(-\infty\) padding before jumping to \(N=4096+\).
 - Softmax is **shift-invariant** — subtracting the row max is free numerically and required for stability.
 - Occupancy: register/shared use of the fused row limits how many programs fit per SM; `num_programs ≈ #SM × occupancy`, capped by \(M\).
-- Re-run `python scripts/download_tutorial_images.py` if figures are missing offline.
 
 ## See also
 

@@ -49,7 +49,17 @@ def require_gpu() -> None:
     if not torch.cuda.is_available() and getattr(DEVICE, "type", None) != "cuda":
         pytest.skip(f"GPU not available (active device: {DEVICE})")
 
-_matmul_path = Path(__file__).resolve().parents[1] / "03_matrix_multiplication" / "tutorial.py"
+_HERE = Path(__file__).resolve().parent
+_REPO = _HERE
+for _candidate in (_HERE, *_HERE.parents):
+    if (_candidate / '03_matrix_multiplication' / 'tutorial.py').exists():
+        _REPO = _candidate
+        break
+else:
+    raise FileNotFoundError(
+        'cannot locate 03_matrix_multiplication from ' + str(_HERE)
+    )
+_matmul_path = _REPO / '03_matrix_multiplication' / 'tutorial.py'
 _spec = importlib.util.spec_from_file_location("matmul_mod", _matmul_path)
 _matmul_mod = importlib.util.module_from_spec(_spec)
 assert _spec.loader is not None
@@ -111,9 +121,11 @@ def test_pseudo_matches_torch() -> None:
     torch.manual_seed(0)
     a = torch.randn(32, 16)
     b = torch.randn(16, 24)
-    sa, sb = 0.5, 2.0
-    ref = (a * sa) @ (b * sb)
-    assert torch.allclose(naive_block_scaled_matmul_pseudo(a, b, sa, sb), ref, atol=1e-5)
+    sa, sb = 0.5, 3.0          # product 1.5, not 1: a kernel that ignores scales fails
+    ref = torch.einsum("ik,kj->ij", a * sa, b * sb)
+    assert torch.allclose(
+        naive_block_scaled_matmul_pseudo(a, b, sa, sb), ref, atol=1e-5
+    )
 
 
 def test_correctness() -> None:
@@ -122,8 +134,8 @@ def test_correctness() -> None:
     a = torch.randn(m, k, device=DEVICE, dtype=torch.float16)
     b = torch.randn(k, n, device=DEVICE, dtype=torch.float16)
     sa = torch.tensor(0.5, device=DEVICE, dtype=torch.float16)
-    sb = torch.tensor(2.0, device=DEVICE, dtype=torch.float16)
-    ref = torch.matmul(a * sa, b * sb)
+    sb = torch.tensor(3.0, device=DEVICE, dtype=torch.float16)
+    ref = torch.matmul(a.float() * sa, b.float() * sb)
     c_ref = block_scaled_matmul_ref(a, b, sa, sb)
     c_tl = block_scaled_matmul_triton(a, b, float(sa), float(sb))
     assert torch.allclose(c_ref.float(), ref.float(), atol=1e-2, rtol=1e-2)

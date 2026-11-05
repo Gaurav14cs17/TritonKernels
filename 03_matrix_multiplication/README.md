@@ -127,12 +127,12 @@ Row-major launch order reloads $A$/$B$ tiles too often. **Group** $G_M$ rows of 
 
 ![Grouped PID map: column-major inside each group.](docs/images/notes-20-grouped-pid.png)
 
-Illustrative load counts from the notes (writing 9 $C$-tiles, `GROUP_SIZE=3`):
+Illustrative load counts for a $3\times3$ tile grid (`GROUP_SIZE=3`):
 
 | Order | A-panel loads | B-panel loads |
 |-------|---------------|---------------|
-| Row-major | 9 | 81 |
-| Grouped | 27 | 27 |
+| Row-major | 3 | 9 |
+| Grouped | 3 | 3 |
 
 Only the $\mathrm{pid}\mapsto(p_m,p_n)$ map changes; the $K$-loop / `tl.dot` body is identical to the blocked kernel.
 

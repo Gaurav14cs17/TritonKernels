@@ -12,7 +12,7 @@ https://github.com/evintunador/triton_docs_tutorials/blob/main/06_matmul/matmul.
 C = A@B -> [M x K] @ [K x N] = [M x N]
 
 We wont be using this Matmul directly anywhere as Cupy already is using the highly optimized
-CUDNN in the backend. This is more of an attempt to understand grouping as we will use it in
+cuBLAS in the backend. This is more of an attempt to understand grouping as we will use it in
 our linear layers (with a fused bias) and convolution layers
 """
 
@@ -334,10 +334,6 @@ def grouped_blocked_matmul_psuedo(A, B, BLOCK_SIZE_M, BLOCK_SIZE_N, GROUP_SIZE):
 
     assert M % BLOCK_SIZE_M == 0, "Assuming M divisible by BLOCK_SIZE_M for simplicity"
     assert N % BLOCK_SIZE_N == 0, "Assuming N divisible by BLOCK_SIZE_N for simplicity"
-    assert (BLOCK_SIZE_M % GROUP_SIZE == 0) and (
-        BLOCK_SIZE_N % GROUP_SIZE == 0
-    ), "Assuming BLOCK_SIZE_M/N are divisible by our GROUP_SIZE"
-
     ### Get how many rows and cols we have at the Block level ###
     num_block_rows = M // BLOCK_SIZE_M
     num_block_cols = N // BLOCK_SIZE_N
@@ -752,7 +748,11 @@ def fused_grouped_matmul(a, b):
 
 # Alias used by later tutorials (08/09/10)
 def matmul(a, b, activation=""):
-    del activation  # kept for API compatibility with earlier tutorial versions
+    if activation not in ("", None):
+        raise NotImplementedError(
+            "this teaching matmul implements the plain GEMM; fuse the activation "
+            "into the epilogue to support one"
+        )
     return fused_grouped_matmul(a, b)
 
 
@@ -799,8 +799,11 @@ def test_pseudo_matches_torch() -> None:
     ref = a @ b
     assert torch.allclose(naive_matmul_psuedo(a, b), ref, atol=1e-5)
     assert torch.allclose(blocked_matmul_pseudo(a, b, 3, 4), ref, atol=1e-5)
-    grouped, _ = grouped_blocked_matmul_psuedo(a, b, 3, 4, GROUP_SIZE=1)
+    grouped, pid_visual = grouped_blocked_matmul_psuedo(a, b, 3, 4, GROUP_SIZE=2)
     assert torch.allclose(grouped, ref, atol=1e-5)
+    # GROUP_SIZE=2 on a 2x2 tile grid must produce column-major order in each
+    # group: [[0, 2], [1, 3]], not the row-major [[0, 1], [2, 3]].
+    assert pid_visual.tolist() == [[0.0, 2.0], [1.0, 3.0]]
 
 
 # %%
@@ -839,10 +842,33 @@ def benchmark_matmul(M, N, K, provider):
 
 
 # %%
+def test_tail_shapes() -> None:
+    """GPU: M, N, K not divisible by the tile sizes exercise every mask path."""
+    require_gpu()
+    torch.manual_seed(0)
+    m, n, k = 100, 100, 100
+    a = torch.randn(m, k, device=DEVICE, dtype=torch.float16)
+    b = torch.randn(k, n, device=DEVICE, dtype=torch.float16)
+    ref = a @ b
+    for name, fn in (
+        ("naive", naive_matmul),
+        ("blocked", blocked_matmul),
+        ("grouped", fused_grouped_matmul),
+    ):
+        out = fn(a, b)
+        assert torch.allclose(out.float(), ref.float(), atol=2e-2, rtol=2e-2), name
+        print(f"{name} tail shapes OK")
+
+
+# %%
 if __name__ == "__main__":
     print("Running Test...")
-    test_correctness()
     test_pseudo_matches_torch()
+    for fn in (test_correctness, test_tail_shapes):
+        try:
+            fn()
+        except pytest.skip.Exception as e:
+            print(f"skipped {fn.__name__}: {e}")
 
     print("Running Benchmark...")
     if torch.cuda.is_available() or DEVICE.type == "cuda":
